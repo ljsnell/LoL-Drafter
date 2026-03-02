@@ -789,6 +789,239 @@ header .patch-info {
 
 .fade-in { animation: fadeIn 0.3s ease; }
 
+/* ── ROLE ASSIGNMENT SCREEN ─────────────────────────────── */
+.ra-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-bottom: 20px;
+}
+
+#ra-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.ra-team {
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ra-check {
+  color: #4CAF50;
+  font-size: 0.9rem;
+  margin-left: 5px;
+}
+
+.ra-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.ra-row.ra-unassigned { background: rgba(255,255,255,0.02); }
+.ra-row.ra-assigned   { background: rgba(255,255,255,0.04); }
+.ra-row:hover         { background: var(--bg-hover); }
+
+.ra-champ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.ra-champ-info { min-width: 0; }
+.ra-champ-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ra-champ-meta { font-size: 0.65rem; color: var(--gold); }
+
+.ra-role-btns {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.ra-role-btn {
+  padding: 4px 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.ra-role-btn:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.ra-role-btn.ra-selected {
+  background: var(--border-gold);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.ra-role-btn.ra-taken {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.ra-assigned-badge {
+  width: 50px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ra-row.ra-assigned .ra-assigned-badge { color: var(--gold); }
+
+/* Actions row */
+.ra-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ra-autofill-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ra-autofill-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.ra-analyze-btn {
+  flex: 2;
+  padding: 10px;
+  background: linear-gradient(180deg, #0d2e0d 0%, #061506 100%);
+  border: 1px solid #2a5a2a;
+  color: #4CAF50;
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ra-analyze-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #163516 0%, #0a1e0a 100%);
+  border-color: #4CAF50;
+  box-shadow: 0 0 14px rgba(76,175,80,0.4);
+  color: #81C784;
+}
+
+.ra-analyze-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.ra-reset-btn {
+  display: block;
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ra-reset-btn:hover {
+  border-color: var(--red-dim);
+  color: var(--red-primary);
+}
+
+/* Results footer with back button */
+.results-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.results-footer #back-to-roles-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.results-footer #back-to-roles-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+
+.results-footer #reset-btn {
+  flex: 2;
+}
+
+/* Lane tags on matchup items */
+.adv-lane {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 2px;
+  background: rgba(200,155,60,0.2);
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.adv-lane-cross {
+  background: rgba(255,255,255,0.07);
+  color: var(--text-muted);
+}
+
+.matchup-item.same-lane {
+  background: rgba(255,255,255,0.04);
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   #draft-board {
@@ -797,6 +1030,9 @@ header .patch-info {
   .team-panel { border: none; border-bottom: 1px solid var(--border); }
   #teams-grid { grid-template-columns: 1fr; }
   #score-breakdown { grid-template-columns: 1fr; }
+  #ra-grid { grid-template-columns: 1fr; }
+  .ra-row { flex-wrap: wrap; }
+  .ra-champ { width: 100%; }
   header h1 { font-size: 1.1rem; }
 }
 

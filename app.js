@@ -38,6 +38,8 @@ let state = {
   redBans:     [],
   bluePicks:   [],   // champion names (max 5)
   redPicks:    [],
+  blueRoleAssign: {}, // { champName: role }  — set during role assignment screen
+  redRoleAssign:  {},
   selectedChampion: null,
   roleFilter:  'all',
   searchQuery: '',
@@ -331,7 +333,7 @@ function confirmSelection() {
 
   if (state.currentTurn >= DRAFT_SEQUENCE.length) {
     renderAll();
-    setTimeout(showResults, 300);
+    setTimeout(showRoleAssignment, 300);
   } else {
     renderAll();
   }
@@ -407,13 +409,18 @@ function calculateWinProbability() {
       if (checkedPairs.has(pairKey)) continue;
       checkedPairs.add(pairKey);
 
+      const blueRole = state.blueRoleAssign[bc];
+      const redRole  = state.redRoleAssign[rc];
+      const sameLane = blueRole && redRole && blueRole === redRole;
+      const bonus    = sameLane ? 2.5 : 1.5;
+
       if (bd.strongAgainst?.includes(rc)) {
-        blueMatchup += 2;
-        matchups.push({ winner: bc, loser: rc, team: 'blue', bonus: '+2%' });
+        blueMatchup += bonus;
+        matchups.push({ winner: bc, loser: rc, team: 'blue', bonus: `+${bonus}%`, sameLane, lane: blueRole });
       }
       if (rd.strongAgainst?.includes(bc)) {
-        redMatchup += 2;
-        matchups.push({ winner: rc, loser: bc, team: 'red', bonus: '+2%' });
+        redMatchup += bonus;
+        matchups.push({ winner: rc, loser: bc, team: 'red', bonus: `+${bonus}%`, sameLane, lane: redRole });
       }
     }
   }
@@ -456,8 +463,9 @@ function showResults() {
   const modal  = document.getElementById('results-modal');
   const content = document.getElementById('results-content');
 
-  const blueRoles = assignRoles(state.bluePicks);
-  const redRoles  = assignRoles(state.redPicks);
+  // Build role→champ maps from user assignments (invert champ→role)
+  const blueRoles = invertRoleAssign(state.blueRoleAssign);
+  const redRoles  = invertRoleAssign(state.redRoleAssign);
 
   // Winner banner
   const winnerName = result.winner === 'blue' ? 'BLUE SIDE WINS' : 'RED SIDE WINS';
@@ -485,15 +493,21 @@ function showResults() {
     }).join('');
   }
 
-  // Matchup rows
-  const matchupHtml = result.matchups.length
-    ? result.matchups.map(m => `
-        <div class="matchup-item ${m.team}-advantage">
+  // Matchup rows — sort: same-lane first
+  const sortedMatchups = [...result.matchups].sort((a, b) => (b.sameLane ? 1 : 0) - (a.sameLane ? 1 : 0));
+  const matchupHtml = sortedMatchups.length
+    ? sortedMatchups.map(m => {
+        const laneTag = m.sameLane && m.lane
+          ? `<span class="adv-lane">${ROLE_CONFIG[m.lane]?.label}</span>`
+          : (m.lane ? `<span class="adv-lane adv-lane-cross">${ROLE_CONFIG[m.lane]?.label}</span>` : '');
+        return `<div class="matchup-item ${m.team}-advantage${m.sameLane ? ' same-lane' : ''}">
+          ${laneTag}
           <span class="adv-champ">${m.winner}</span>
           <span class="adv-vs"> counters </span>
           <span class="adv-target">${m.loser}</span>
           <span class="adv-bonus">${m.bonus}</span>
-        </div>`).join('')
+        </div>`;
+      }).join('')
     : `<div class="no-matchups">No direct counterpick advantages found</div>`;
 
   content.innerHTML = `
@@ -569,26 +583,32 @@ function showResults() {
       </div>
     </div>
 
-    <button id="reset-btn">New Draft</button>
+    <div class="results-footer">
+      <button id="back-to-roles-btn">← Edit Roles</button>
+      <button id="reset-btn">New Draft</button>
+    </div>
   `;
 
   modal.classList.remove('hidden');
   modal.classList.add('fade-in');
 
-  // Wire up reset button in dynamically generated content
   document.getElementById('reset-btn').addEventListener('click', resetDraft);
+  document.getElementById('back-to-roles-btn').addEventListener('click', showRoleAssignment);
 }
 
 // ── RESET ──────────────────────────────────────────────────────
 function resetDraft() {
-  state.currentTurn     = 0;
-  state.blueBans        = [];
-  state.redBans         = [];
-  state.bluePicks       = [];
-  state.redPicks        = [];
+  state.currentTurn      = 0;
+  state.blueBans         = [];
+  state.redBans          = [];
+  state.bluePicks        = [];
+  state.redPicks         = [];
+  state.blueRoleAssign   = {};
+  state.redRoleAssign    = {};
   state.selectedChampion = null;
-  state.roleFilter      = 'all';
-  state.searchQuery     = '';
+  state.roleFilter       = 'all';
+  state.searchQuery      = '';
+  document.getElementById('results-modal').removeEventListener('click', onRoleModalClick);
 
   document.getElementById('search-input').value = '';
   document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
@@ -596,6 +616,160 @@ function resetDraft() {
   document.getElementById('results-modal').classList.add('hidden');
 
   renderAll();
+}
+
+// ── ROLE ASSIGNMENT ────────────────────────────────────────────
+function escapeAttr(str) {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function invertRoleAssign(assignments) {
+  // { champName: role } → { role: champName }
+  const result = {};
+  for (const [champ, role] of Object.entries(assignments)) result[role] = champ;
+  return result;
+}
+
+function isRoleAssignValid(team) {
+  const assignments = team === 'blue' ? state.blueRoleAssign : state.redRoleAssign;
+  const vals = Object.values(assignments);
+  const roles = ['top', 'jungle', 'mid', 'adc', 'support'];
+  return vals.length === 5 && roles.every(r => vals.includes(r));
+}
+
+function showRoleAssignment() {
+  // Pre-fill with smart auto-suggestions
+  const blueAuto = assignRoles(state.bluePicks);
+  const redAuto  = assignRoles(state.redPicks);
+  state.blueRoleAssign = {};
+  state.redRoleAssign  = {};
+  for (const [role, champ] of Object.entries(blueAuto)) { if (champ) state.blueRoleAssign[champ] = role; }
+  for (const [role, champ] of Object.entries(redAuto))  { if (champ) state.redRoleAssign[champ]  = role; }
+
+  const modal = document.getElementById('results-modal');
+  modal.removeEventListener('click', onRoleModalClick);
+  modal.addEventListener('click', onRoleModalClick);
+
+  renderRoleAssignment();
+  modal.classList.remove('hidden');
+}
+
+function renderRoleAssignment() {
+  document.getElementById('results-content').innerHTML = buildRoleAssignHTML();
+}
+
+function buildRoleAssignHTML() {
+  const ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const blueValid = isRoleAssignValid('blue');
+  const redValid  = isRoleAssignValid('red');
+  const allValid  = blueValid && redValid;
+
+  function teamHTML(team, picks) {
+    const assignments = team === 'blue' ? state.blueRoleAssign : state.redRoleAssign;
+    const usedRoles   = new Set(Object.values(assignments));
+
+    return picks.map(champ => {
+      const assignedRole = assignments[champ];
+      const champAttr    = escapeAttr(champ);
+
+      const roleBtns = ROLES.map(role => {
+        const isSelected = assignedRole === role;
+        const isTaken    = usedRoles.has(role) && !isSelected;
+        let cls = 'ra-role-btn';
+        if (isSelected) cls += ' ra-selected';
+        if (isTaken)    cls += ' ra-taken';
+        return `<button class="${cls}"
+          data-team="${team}" data-champ="${champAttr}" data-role="${role}"
+          ${isTaken ? 'disabled' : ''}>${ROLE_CONFIG[role].label}</button>`;
+      }).join('');
+
+      const rowCls = assignedRole ? 'ra-row ra-assigned' : 'ra-row ra-unassigned';
+      return `<div class="${rowCls}">
+        <div class="ra-champ">
+          ${imgWithFallback(champ, '', 'width:40px;height:40px;border-radius:3px;object-fit:cover;flex-shrink:0;')}
+          <div class="ra-champ-info">
+            <div class="ra-champ-name">${champ}</div>
+            <div class="ra-champ-meta">${CHAMPIONS[champ]?.winRate.toFixed(1)}% WR</div>
+          </div>
+        </div>
+        <div class="ra-role-btns">${roleBtns}</div>
+        <div class="ra-assigned-badge">${assignedRole ? ROLE_CONFIG[assignedRole].label : ''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  return `
+    <h2>Assign Roles</h2>
+    <p class="ra-subtitle">Assign each champion to their lane — roles snap to prevent duplicates</p>
+
+    <div id="ra-grid">
+      <div class="ra-team">
+        <div class="result-team-header blue-team-header">
+          Blue Side${blueValid ? ' <span class="ra-check">✓</span>' : ''}
+        </div>
+        ${teamHTML('blue', state.bluePicks)}
+      </div>
+      <div class="ra-team">
+        <div class="result-team-header red-team-header">
+          Red Side${redValid ? ' <span class="ra-check">✓</span>' : ''}
+        </div>
+        ${teamHTML('red', state.redPicks)}
+      </div>
+    </div>
+
+    <div class="ra-actions">
+      <button id="ra-autofill" class="ra-autofill-btn">↺ Reset Suggestions</button>
+      <button id="ra-analyze"  class="ra-analyze-btn" ${allValid ? '' : 'disabled'}>
+        Analyze Draft →
+      </button>
+    </div>
+    <button id="reset-btn" class="ra-reset-btn">New Draft</button>
+  `;
+}
+
+function onRoleModalClick(e) {
+  // Role button
+  const roleBtn = e.target.closest('[data-role][data-champ]');
+  if (roleBtn && !roleBtn.disabled) {
+    const { team, champ, role } = roleBtn.dataset;
+    const assignments = team === 'blue' ? state.blueRoleAssign : state.redRoleAssign;
+
+    // If another champ already holds this role, unassign them
+    for (const [c, r] of Object.entries(assignments)) {
+      if (r === role) delete assignments[c];
+    }
+    // Toggle: clicking the already-selected role unassigns
+    if (assignments[champ] === role) delete assignments[champ];
+    else assignments[champ] = role;
+
+    renderRoleAssignment();
+    return;
+  }
+
+  // Auto-fill
+  if (e.target.closest('#ra-autofill')) {
+    const blueAuto = assignRoles(state.bluePicks);
+    const redAuto  = assignRoles(state.redPicks);
+    state.blueRoleAssign = {};
+    state.redRoleAssign  = {};
+    for (const [role, champ] of Object.entries(blueAuto)) { if (champ) state.blueRoleAssign[champ] = role; }
+    for (const [role, champ] of Object.entries(redAuto))  { if (champ) state.redRoleAssign[champ]  = role; }
+    renderRoleAssignment();
+    return;
+  }
+
+  // Analyze
+  const analyzeBtn = e.target.closest('#ra-analyze');
+  if (analyzeBtn && !analyzeBtn.disabled) {
+    document.getElementById('results-modal').removeEventListener('click', onRoleModalClick);
+    showResults();
+    return;
+  }
+
+  // Reset / New Draft
+  if (e.target.closest('#reset-btn')) {
+    resetDraft();
+  }
 }
 
 // ── START ──────────────────────────────────────────────────────
