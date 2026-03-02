@@ -679,8 +679,7 @@ function buildRoleAssignHTML() {
         if (isSelected) cls += ' ra-selected';
         if (isTaken)    cls += ' ra-taken';
         return `<button class="${cls}"
-          data-team="${team}" data-champ="${champAttr}" data-role="${role}"
-          ${isTaken ? 'disabled' : ''}>${ROLE_CONFIG[role].label}</button>`;
+          data-team="${team}" data-champ="${champAttr}" data-role="${role}">${ROLE_CONFIG[role].label}</button>`;
       }).join('');
 
       const rowCls = assignedRole ? 'ra-row ra-assigned' : 'ra-row ra-unassigned';
@@ -730,17 +729,23 @@ function buildRoleAssignHTML() {
 function onRoleModalClick(e) {
   // Role button
   const roleBtn = e.target.closest('[data-role][data-champ]');
-  if (roleBtn && !roleBtn.disabled) {
+  if (roleBtn) {
     const { team, champ, role } = roleBtn.dataset;
     const assignments = team === 'blue' ? state.blueRoleAssign : state.redRoleAssign;
 
-    // If another champ already holds this role, unassign them
-    for (const [c, r] of Object.entries(assignments)) {
-      if (r === role) delete assignments[c];
+    // Check BEFORE any mutation whether this champ already owns this role
+    const alreadySelected = assignments[champ] === role;
+
+    if (alreadySelected) {
+      // Toggle off — unassign
+      delete assignments[champ];
+    } else {
+      // Remove whichever champion currently holds this role (swap)
+      for (const [c, r] of Object.entries(assignments)) {
+        if (r === role) delete assignments[c];
+      }
+      assignments[champ] = role;
     }
-    // Toggle: clicking the already-selected role unassigns
-    if (assignments[champ] === role) delete assignments[champ];
-    else assignments[champ] = role;
 
     renderRoleAssignment();
     return;
