@@ -469,6 +469,11 @@ const CHAMPIONS = {
     roles: ["support", "mid"], winRate: 50.3, type: "mage",
     strongAgainst: ["Thresh", "Leona", "Blitzcrank"],
     weakAgainst: ["Soraka", "Lulu", "Nami"]
+  },
+  "Milio": {
+    roles: ["support"], winRate: 51.8, type: "utility",
+    strongAgainst: ["Leona", "Nautilus", "Blitzcrank"],
+    weakAgainst: ["Pyke", "Alistar", "Senna"]
   }
 };
 
