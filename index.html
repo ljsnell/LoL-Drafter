@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoL Draft Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>League of Legends — Draft Simulator</h1>
+  <span class="patch-info" id="patch-info">Loading patch…</span>
+</header>
+
+<main id="app">
+
+  <!-- ── DRAFT BOARD ── -->
+  <div id="draft-board">
+
+    <!-- Blue Team -->
+    <div id="blue-panel" class="team-panel team-blue">
+      <h2>Blue Side</h2>
+      <div class="bans-label">Bans</div>
+      <div class="bans-row" id="blue-bans"></div>
+      <div class="picks-list" id="blue-picks"></div>
+    </div>
+
+    <!-- Center / Action Panel -->
+    <div id="draft-center">
+      <div id="phase-indicator">
+        <div id="phase-label">Ban Phase 1</div>
+        <div id="phase-action" class="blue-action">BLUE · BAN</div>
+        <div id="phase-sub">Blue side selects a champion to ban</div>
+      </div>
+
+      <div id="selected-preview">
+        <div class="no-selection">Click a champion to select</div>
+      </div>
+
+      <div id="turn-bar"></div>
+
+      <button id="confirm-btn" disabled>BAN CHAMPION</button>
+    </div>
+
+    <!-- Red Team -->
+    <div id="red-panel" class="team-panel team-red">
+      <h2>Red Side</h2>
+      <div class="bans-label">Bans</div>
+      <div class="bans-row" id="red-bans"></div>
+      <div class="picks-list" id="red-picks"></div>
+    </div>
+
+  </div><!-- /#draft-board -->
+
+  <!-- ── CHAMPION SELECT ── -->
+  <div id="champion-select">
+    <div id="filter-row">
+      <input type="text" id="search-input" placeholder="Search champions…" autocomplete="off">
+      <div id="role-filters">
+        <button class="role-btn active" data-role="all">All</button>
+        <button class="role-btn" data-role="top">Top</button>
+        <button class="role-btn" data-role="jungle">Jungle</button>
+        <button class="role-btn" data-role="mid">Mid</button>
+        <button class="role-btn" data-role="adc">ADC</button>
+        <button class="role-btn" data-role="support">Support</button>
+      </div>
+    </div>
+    <div id="champion-grid"></div>
+  </div>
+
+</main><!-- /#app -->
+
+<!-- ── RESULTS MODAL ── -->
+<div id="results-modal" class="hidden">
+  <div id="results-content">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<script src="champions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
